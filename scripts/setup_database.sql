@@ -10,9 +10,15 @@ CREATE TABLE IF NOT EXISTS products (
     category TEXT,
     uom TEXT DEFAULT 'unit', -- Unit of Measure
     min_stock_level INTEGER DEFAULT 0,
+    barcode TEXT UNIQUE,
+    image_url TEXT,
+    supplier_id UUID, -- Foreign key added later or can be added here if suppliers table exists
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Create index for barcode for faster lookups
+CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
 
 -- Create warehouses table
 CREATE TABLE IF NOT EXISTS warehouses (

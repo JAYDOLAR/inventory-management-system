@@ -54,6 +54,7 @@ export function ProductForm({ initialData, onSubmit, submitLabel, isSubmitting }
     const formData = new FormData(e.currentTarget)
     const data = {
       sku: formData.get("sku") as string,
+      barcode: formData.get("barcode") as string,
       name: formData.get("name") as string,
       description: formData.get("description") as string,
       category: formData.get("category") as string,
@@ -103,6 +104,16 @@ export function ProductForm({ initialData, onSubmit, submitLabel, isSubmitting }
             placeholder="e.g., PROD-001"
             defaultValue={initialData?.sku || ""}
             required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="barcode">Barcode</Label>
+          <Input
+            id="barcode"
+            name="barcode"
+            placeholder="Scan or enter barcode"
+            defaultValue={initialData?.barcode || ""}
           />
         </div>
 

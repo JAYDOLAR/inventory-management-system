@@ -41,7 +41,7 @@ export default function NewReceiptPage() {
   useEffect(() => {
     async function fetchData() {
       const [productsRes, warehousesRes, suppliersRes] = await Promise.all([
-        supabase.from("products").select("id, name, sku"),
+        supabase.from("products").select("id, name, sku, barcode"),
         supabase.from("warehouses").select("id, name"),
         supabase.from("suppliers").select("id, name"),
       ])
@@ -66,13 +66,13 @@ export default function NewReceiptPage() {
   }
 
   async function handleBarcodeScan(code: string) {
-    const product = products.find((p) => p.sku === code)
+    const product = products.find((p) => p.sku === code || p.barcode === code)
     if (product) {
       setItems([...items, { id: crypto.randomUUID(), productId: product.id, quantity: 1 }])
       toast.success(`Added: ${product.name}`)
       setShowScanner(false)
     } else {
-      toast.error(`No product found with SKU: ${code}`)
+      toast.error(`No product found with SKU or Barcode: ${code}`)
     }
   }
 

@@ -2,7 +2,9 @@ import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
+import Link from "next/link"
 import StockMovesFilters from "@/components/stock-moves/stock-moves-filters"
 import ExportMovesButton from "@/components/stock-moves/export-moves-button"
 
@@ -77,13 +79,15 @@ export default async function StockMovesPage({ searchParams }: PageProps) {
                 <TableHead>From</TableHead>
                 <TableHead>To</TableHead>
                 <TableHead className="text-right">Quantity</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead className="text-right">Status</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {moves?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                     No stock movements found.
                   </TableCell>
                 </TableRow>
@@ -101,10 +105,26 @@ export default async function StockMovesPage({ searchParams }: PageProps) {
                     <TableCell>{move.from_warehouse?.name || "-"}</TableCell>
                     <TableCell>{move.to_warehouse?.name || "-"}</TableCell>
                     <TableCell className="text-right font-medium">{move.quantity}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant="secondary" className="uppercase text-xs">
+                    <TableCell>
+                      <Badge variant="outline" className="uppercase text-xs">
                         {move.type}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge 
+                        variant={move.status === 'done' ? 'default' : 'secondary'} 
+                        className={`uppercase text-xs ${
+                          move.status === 'done' ? 'bg-green-500 hover:bg-green-600' : 
+                          move.status === 'draft' ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''
+                        }`}
+                      >
+                        {move.status || 'done'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/moves/${move.id}`}>View</Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
