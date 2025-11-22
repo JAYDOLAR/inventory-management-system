@@ -24,8 +24,7 @@ export default async function ReportsPage() {
     .select(
       `
       *,
-      product:products(name, sku, category),
-      warehouse:warehouses(name)
+      product:products(name, sku, category)
     `
     )
     .order("created_at", { ascending: false })

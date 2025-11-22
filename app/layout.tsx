@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
+import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "sonner"
 import { ClientErrorHandler } from "@/components/client-error-handler"
 import { ConditionalLayout } from "@/components/conditional-layout"
@@ -26,14 +27,21 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`} suppressHydrationWarning>
-        <ClientErrorHandler />
-        <ConditionalLayout>
-          {children}
-        </ConditionalLayout>
-        <Toaster />
-        <Analytics />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ClientErrorHandler />
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
+          <Toaster />
+          <Analytics />
+        </ThemeProvider>
       </body>
     </html>
   )

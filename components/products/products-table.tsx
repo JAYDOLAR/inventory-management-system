@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -26,6 +26,10 @@ interface ProductsTableProps {
 
 export function ProductsTable({ products }: ProductsTableProps) {
   const [items, setItems] = useState(products)
+
+  useEffect(() => {
+    setItems(products)
+  }, [products])
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return

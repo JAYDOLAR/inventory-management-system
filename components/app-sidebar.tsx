@@ -64,7 +64,7 @@ export function AppSidebar() {
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">Nexus IMS</span>
-                  <span className="text-xs text-muted-foreground">v1.0.0</span>
+                  <span className="text-xs text-muted-foreground">v2.0.0</span>
                 </div>
               </Link>
             </SidebarMenuButton>

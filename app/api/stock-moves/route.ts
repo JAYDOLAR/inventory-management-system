@@ -128,9 +128,10 @@ export async function POST(request: Request) {
           .select("quantity")
           .eq("product_id", body.product_id)
           .eq("warehouse_id", body.from_warehouse_id)
-          .maybeSingle()
         
-        const available = currentStock?.quantity || 0
+        // Sum up quantity across all bin locations for this product/warehouse
+        const available = currentStock?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0
+        
         if (available < body.quantity) {
           return NextResponse.json(
             { error: `Insufficient stock for product ${body.product_id}. Available: ${available}, Requested: ${body.quantity}` },

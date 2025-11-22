@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowUpRight, ArrowDownRight, Package, AlertTriangle, Activity, TrendingUp } from "lucide-react"
+import { ArrowUpRight, ArrowDownRight, Package, AlertTriangle, Activity, TrendingUp, ArrowRight } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 
 export default async function Dashboard() {
@@ -37,7 +37,11 @@ export default async function Dashboard() {
   // Get recent stock moves
   const { data: recentMoves, count: totalMoves } = await supabase
     .from('stock_moves')
-    .select('*', { count: 'exact' })
+    .select(`
+      *,
+      from_warehouse:from_warehouse_id(name),
+      to_warehouse:to_warehouse_id(name)
+    `, { count: 'exact' })
     .order('created_at', { ascending: false })
     .limit(10)
 
@@ -158,9 +162,24 @@ export default async function Dashboard() {
                         </span>
                         <span className="text-sm font-medium">{move.reference || 'N/A'}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {move.quantity} units • {new Date(move.created_at).toLocaleDateString()}
-                      </p>
+                      <div className="text-xs text-muted-foreground flex flex-col gap-0.5">
+                        <span>{move.quantity} units • {new Date(move.created_at).toLocaleDateString()}</span>
+                        {move.type === 'transfer' && move.from_warehouse && move.to_warehouse && (
+                          <span className="flex items-center gap-1 text-xs opacity-80">
+                            {move.from_warehouse.name} <ArrowRight className="h-3 w-3" /> {move.to_warehouse.name}
+                          </span>
+                        )}
+                        {move.type === 'receipt' && move.to_warehouse && (
+                          <span className="flex items-center gap-1 text-xs opacity-80">
+                            To: {move.to_warehouse.name}
+                          </span>
+                        )}
+                        {move.type === 'delivery' && move.from_warehouse && (
+                          <span className="flex items-center gap-1 text-xs opacity-80">
+                            From: {move.from_warehouse.name}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right">
                       <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -207,32 +226,40 @@ export default async function Dashboard() {
                   )
                 }
 
-                // Calculate capacity (total units / estimated max capacity)
-                const maxCapacityPerWarehouse = 1000 // This could be added to warehouses table
-
-                return warehouses.map((warehouse: any) => {
-                  const totalUnits = warehouse.inventory_levels?.reduce((sum: number, inv: any) => 
+                // Calculate total units for each warehouse first
+                const warehouseData = warehouses.map((w: any) => ({
+                  ...w,
+                  totalUnits: w.inventory_levels?.reduce((sum: number, inv: any) => 
                     sum + (inv.quantity || 0), 0) || 0
-                  const percentage = Math.min(Math.round((totalUnits / maxCapacityPerWarehouse) * 100), 100)
+                }))
+
+                // Determine dynamic capacity based on the highest stock level
+                // Ensure at least 3000 units capacity, or 1.1x the highest stock to make charts look fuller
+                const maxStock = Math.max(...warehouseData.map((w: any) => w.totalUnits), 0)
+                const maxCapacityPerWarehouse = Math.max(3000, Math.ceil(maxStock * 1.1))
+
+                return warehouseData.map((warehouse: any) => {
+                  const percentage = Math.min(Math.round((warehouse.totalUnits / maxCapacityPerWarehouse) * 100), 100)
 
                   return (
                     <div key={warehouse.id} className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <div className="font-medium">{warehouse.name}</div>
-                        <div className="text-muted-foreground">{totalUnits} units</div>
+                        <div className="text-muted-foreground">{warehouse.totalUnits} units</div>
                       </div>
                       <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                         <div 
                           className={`h-full transition-all ${
                             percentage >= 90 ? 'bg-red-500' : 
-                            percentage >= 70 ? 'bg-amber-500' : 
+                            percentage >= 75 ? 'bg-amber-500' : 
                             'bg-primary'
                           }`}
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {percentage}% capacity
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{percentage}% utilization</span>
+                        <span>Target: {maxCapacityPerWarehouse.toLocaleString()} units</span>
                       </div>
                     </div>
                   )

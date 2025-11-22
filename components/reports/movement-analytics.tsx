@@ -11,6 +11,13 @@ interface MovementAnalyticsProps {
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']
 
 export function MovementAnalytics({ stockMoves, detailed = false }: MovementAnalyticsProps) {
+  // Generate last 14 days
+  const last14Days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (13 - i))
+    return d.toLocaleDateString()
+  })
+
   // Group by date for trend
   const dateData = stockMoves.reduce((acc: any, move) => {
     const date = new Date(move.created_at).toLocaleDateString()
@@ -21,7 +28,14 @@ export function MovementAnalytics({ stockMoves, detailed = false }: MovementAnal
     return acc
   }, {})
 
-  const trendData = Object.values(dateData).slice(-14) // Last 14 days
+  // Map to last 14 days, filling missing
+  const trendData = last14Days.map(date => ({
+    date,
+    receipt: dateData[date]?.receipt || 0,
+    delivery: dateData[date]?.delivery || 0,
+    transfer: dateData[date]?.transfer || 0,
+    adjustment: dateData[date]?.adjustment || 0,
+  }))
 
   // Group by type for pie chart
   const typeData = stockMoves.reduce((acc: any, move) => {

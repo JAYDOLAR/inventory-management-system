@@ -26,6 +26,7 @@ export default function NewTransferPage() {
   const [destWarehouseId, setDestWarehouseId] = useState<string>("")
   const [reference, setReference] = useState("")
   const [notes, setNotes] = useState("")
+  const [stockLevels, setStockLevels] = useState<Record<string, number>>({})
   
   const router = useRouter()
   const supabase = createClient()
@@ -42,6 +43,30 @@ export default function NewTransferPage() {
     }
     fetchData()
   }, [])
+
+  // Fetch stock levels when source warehouse changes
+  useEffect(() => {
+    async function fetchStock() {
+      if (!sourceWarehouseId) {
+        setStockLevels({})
+        return
+      }
+
+      const { data } = await supabase
+        .from('inventory_levels')
+        .select('product_id, quantity')
+        .eq('warehouse_id', sourceWarehouseId)
+
+      if (data) {
+        const levels: Record<string, number> = {}
+        data.forEach((item: any) => {
+          levels[item.product_id] = (levels[item.product_id] || 0) + (item.quantity || 0)
+        })
+        setStockLevels(levels)
+      }
+    }
+    fetchStock()
+  }, [sourceWarehouseId])
 
   const addItem = () => {
     setItems([...items, { productId: "", quantity: 1 }])
@@ -117,7 +142,7 @@ export default function NewTransferPage() {
   return (
     <div className="flex flex-col gap-6 py-4 max-w-4xl mx-auto w-full">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">New Internal Transfer</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Internal Transfer</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => router.back()}>
             Cancel
@@ -236,13 +261,30 @@ export default function NewTransferPage() {
                           <SelectValue placeholder="Select product" />
                         </SelectTrigger>
                         <SelectContent>
-                          {products.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.sku} - {p.name}
-                            </SelectItem>
-                          ))}
+                          {products.map((p) => {
+                            const available = stockLevels[p.id] || 0
+                            return (
+                              <SelectItem key={p.id} value={p.id}>
+                                <div className="flex justify-between w-full gap-4">
+                                  <span>{p.sku} - {p.name}</span>
+                                  {sourceWarehouseId && (
+                                    <span className={`text-xs ${available > 0 ? 'text-muted-foreground' : 'text-destructive'}`}>
+                                      ({available} available)
+                                    </span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            )
+                          })}
                         </SelectContent>
                       </Select>
+                      {item.productId && sourceWarehouseId && (
+                        <div className="mt-1 text-xs">
+                          Available: <span className={(stockLevels[item.productId] || 0) < item.quantity ? "text-destructive font-bold" : "text-muted-foreground"}>
+                            {stockLevels[item.productId] || 0} units
+                          </span>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Input 
@@ -250,6 +292,7 @@ export default function NewTransferPage() {
                         min="1"
                         value={item.quantity}
                         onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
+                        className={(stockLevels[item.productId] || 0) < item.quantity && sourceWarehouseId ? "border-destructive" : ""}
                       />
                     </TableCell>
                     <TableCell>
