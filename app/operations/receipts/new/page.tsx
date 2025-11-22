@@ -62,36 +62,27 @@ export default function NewReceiptPage() {
       notes: formData.get("notes"),
     }
 
-    const { error } = await supabase.from("stock_moves").insert(move)
+    try {
+      const response = await fetch("/api/stock-moves", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(move)
+      })
 
-    if (error) {
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to process receipt")
+      }
+
+      toast.success("Stock received successfully")
+      router.push("/moves")
+      router.refresh()
+    } catch (error: any) {
+      toast.error(error.message || "Failed to process receipt")
+    } finally {
       setLoading(false)
-      toast.error("Failed to process receipt")
-      console.error(error)
-      return
     }
-
-    // Update inventory levels
-    const { data: currentLevel } = await supabase
-      .from("inventory_levels")
-      .select("quantity")
-      .eq("product_id", move.product_id)
-      .eq("warehouse_id", move.to_warehouse_id)
-      .maybeSingle()
-
-    const newQty = (currentLevel?.quantity || 0) + move.quantity
-
-    await supabase.from("inventory_levels").upsert({
-      product_id: move.product_id,
-      warehouse_id: move.to_warehouse_id,
-      quantity: newQty,
-      last_updated: new Date().toISOString()
-    })
-
-    setLoading(false)
-    toast.success("Stock received successfully")
-    router.push("/moves")
-    router.refresh()
   }
 
   return (

@@ -43,26 +43,6 @@ export default function NewTransferPage() {
     const productId = formData.get("product_id") as string
     const quantity = Number.parseInt(formData.get("quantity") as string)
 
-    if (fromId === toId) {
-      toast.error("Source and destination warehouses must be different")
-      setLoading(false)
-      return
-    }
-
-    // Check if enough stock is available at source
-    const { data: currentLevel } = await supabase
-      .from("inventory_levels")
-      .select("quantity")
-      .eq("product_id", productId)
-      .eq("warehouse_id", fromId)
-      .maybeSingle()
-
-    if (!currentLevel || currentLevel.quantity < quantity) {
-      setLoading(false)
-      toast.error(`Insufficient stock at source. Available: ${currentLevel?.quantity || 0}`)
-      return
-    }
-
     const move = {
       product_id: productId,
       from_warehouse_id: fromId,
@@ -73,44 +53,27 @@ export default function NewTransferPage() {
       notes: formData.get("notes"),
     }
 
-    const { error } = await supabase.from("stock_moves").insert(move)
+    try {
+      const response = await fetch("/api/stock-moves", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(move)
+      })
 
-    if (error) {
-      setLoading(false)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to process transfer")
+      }
+
+      toast.success("Transfer processed successfully")
+      router.push("/moves")
+      router.refresh()
+    } catch (error: any) {
       toast.error(error.message || "Failed to process transfer")
-      console.error(error)
-      return
+    } finally {
+      setLoading(false)
     }
-
-    // Update inventory levels - decrease at source
-    const newQtyFrom = currentLevel.quantity - quantity
-    await supabase.from("inventory_levels").upsert({
-      product_id: productId,
-      warehouse_id: fromId,
-      quantity: newQtyFrom,
-      last_updated: new Date().toISOString()
-    })
-
-    // Update inventory levels - increase at destination
-    const { data: destLevel } = await supabase
-      .from("inventory_levels")
-      .select("quantity")
-      .eq("product_id", productId)
-      .eq("warehouse_id", toId)
-      .maybeSingle()
-
-    const newQtyTo = (destLevel?.quantity || 0) + quantity
-    await supabase.from("inventory_levels").upsert({
-      product_id: productId,
-      warehouse_id: toId,
-      quantity: newQtyTo,
-      last_updated: new Date().toISOString()
-    })
-
-    setLoading(false)
-    toast.success("Transfer processed successfully")
-    router.push("/moves")
-    router.refresh()
   }
 
   return (

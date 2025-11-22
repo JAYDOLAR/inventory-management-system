@@ -41,20 +41,6 @@ export default function NewDeliveryPage() {
     const warehouseId = formData.get("from_warehouse_id") as string
     const quantity = Number.parseInt(formData.get("quantity") as string)
 
-    // Check if enough stock is available
-    const { data: currentLevel } = await supabase
-      .from("inventory_levels")
-      .select("quantity")
-      .eq("product_id", productId)
-      .eq("warehouse_id", warehouseId)
-      .maybeSingle()
-
-    if (!currentLevel || currentLevel.quantity < quantity) {
-      setLoading(false)
-      toast.error(`Insufficient stock available. Current stock: ${currentLevel?.quantity || 0}`)
-      return
-    }
-
     const move = {
       product_id: productId,
       from_warehouse_id: warehouseId,
@@ -64,29 +50,27 @@ export default function NewDeliveryPage() {
       notes: formData.get("notes"),
     }
 
-    const { error } = await supabase.from("stock_moves").insert(move)
+    try {
+      const response = await fetch("/api/stock-moves", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(move)
+      })
 
-    if (error) {
-      setLoading(false)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to process delivery")
+      }
+
+      toast.success("Delivery processed successfully")
+      router.push("/moves")
+      router.refresh()
+    } catch (error: any) {
       toast.error(error.message || "Failed to process delivery")
-      console.error(error)
-      return
+    } finally {
+      setLoading(false)
     }
-
-    // Update inventory levels (decrease stock)
-    const newQty = currentLevel.quantity - quantity
-
-    await supabase.from("inventory_levels").upsert({
-      product_id: productId,
-      warehouse_id: warehouseId,
-      quantity: newQty,
-      last_updated: new Date().toISOString()
-    })
-
-    setLoading(false)
-    toast.success("Delivery processed successfully")
-    router.push("/moves")
-    router.refresh()
   }
 
   return (

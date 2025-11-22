@@ -4,11 +4,9 @@ import type { Metadata } from "next"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
 import { Toaster } from "sonner"
 import { ClientErrorHandler } from "@/components/client-error-handler"
-import LowStockNotifier from "@/components/notifications/low-stock-notifier"
+import { ConditionalLayout } from "@/components/conditional-layout"
 import { Inter as V0_Font_Inter, Geist_Mono as V0_Font_Geist_Mono, Source_Serif_4 as V0_Font_Source_Serif_4 } from 'next/font/google'
 
 // Initialize fonts
@@ -31,22 +29,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans antialiased`} suppressHydrationWarning>
         <ClientErrorHandler />
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background z-10">
-              <SidebarTrigger className="-ml-1" />
-              <div className="h-4 w-px bg-border" />
-              <div className="flex-1" />
-            </header>
-            <main className="flex flex-1 flex-col">
-              <div className="flex-1 space-y-4 p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
-                {children}
-              </div>
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
-        <LowStockNotifier />
+        <ConditionalLayout>
+          {children}
+        </ConditionalLayout>
         <Toaster />
         <Analytics />
       </body>

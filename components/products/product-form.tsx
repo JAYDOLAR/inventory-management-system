@@ -3,15 +3,12 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { ArrowLeft, Loader2 } from "lucide-react"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { Loader2 } from "lucide-react"
 
 const CATEGORIES = [
   "Raw Materials",
@@ -40,14 +37,20 @@ const UNITS = [
   "pallet"
 ]
 
-export function ProductForm() {
+interface ProductFormProps {
+  initialData?: any
+  onSubmit?: (data: any) => Promise<void>
+  submitLabel?: React.ReactNode
+  isSubmitting?: boolean
+}
+
+export function ProductForm({ initialData, onSubmit, submitLabel, isSubmitting }: ProductFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setLoading(true)
-
+    
     const formData = new FormData(e.currentTarget)
     const data = {
       sku: formData.get("sku") as string,
@@ -58,11 +61,24 @@ export function ProductForm() {
       min_stock_level: parseInt(formData.get("min_stock_level") as string),
     }
 
-    try {
-      const supabase = createClient()
-      const { error } = await supabase.from("products").insert(data)
+    if (onSubmit) {
+      await onSubmit(data)
+      return
+    }
 
-      if (error) throw error
+    setLoading(true)
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to create product")
+      }
 
       toast.success("Product created successfully!")
       router.push("/inventory")
@@ -74,121 +90,101 @@ export function ProductForm() {
     }
   }
 
+  const isLoading = isSubmitting ?? loading
+
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/inventory">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Add New Product</h1>
-          <p className="text-muted-foreground">
-            Create a new product in your inventory
-          </p>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="sku">SKU / Product Code *</Label>
+          <Input
+            id="sku"
+            name="sku"
+            placeholder="e.g., PROD-001"
+            defaultValue={initialData?.sku || ""}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="category">Category *</Label>
+          <Select name="category" defaultValue={initialData?.category || ""} required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Product Details</CardTitle>
-          <CardDescription>
-            Enter the details for the new product
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="sku">SKU / Product Code *</Label>
-                <Input
-                  id="sku"
-                  name="sku"
-                  placeholder="e.g., PROD-001"
-                  required
-                />
-              </div>
+      <div className="space-y-2">
+        <Label htmlFor="name">Product Name *</Label>
+        <Input
+          id="name"
+          name="name"
+          placeholder="e.g., Steel Rods 10mm"
+          defaultValue={initialData?.name || ""}
+          required
+        />
+      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
-                <Select name="category" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+      <div className="space-y-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          name="description"
+          placeholder="Product description and notes"
+          defaultValue={initialData?.description || ""}
+          rows={4}
+        />
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="name">Product Name *</Label>
-              <Input
-                id="name"
-                name="name"
-                placeholder="e.g., Steel Rods 10mm"
-                required
-              />
-            </div>
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="uom">Unit of Measure *</Label>
+          <Select name="uom" defaultValue={initialData?.uom || "unit"} required>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {UNITS.map((unit) => (
+                <SelectItem key={unit} value={unit}>
+                  {unit}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                placeholder="Product description and notes"
-                rows={4}
-              />
-            </div>
+        <div className="space-y-2">
+          <Label htmlFor="min_stock_level">Minimum Stock Level *</Label>
+          <Input
+            id="min_stock_level"
+            name="min_stock_level"
+            type="number"
+            min="0"
+            defaultValue={initialData?.min_stock_level || "0"}
+            required
+          />
+        </div>
+      </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="uom">Unit of Measure *</Label>
-                <Select name="uom" defaultValue="unit" required>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UNITS.map((unit) => (
-                      <SelectItem key={unit} value={unit}>
-                        {unit}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="min_stock_level">Minimum Stock Level *</Label>
-                <Input
-                  id="min_stock_level"
-                  name="min_stock_level"
-                  type="number"
-                  min="0"
-                  defaultValue="0"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Product
-              </Button>
-              <Button type="button" variant="outline" asChild>
-                <Link href="/inventory">Cancel</Link>
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+      <div className="flex gap-4 pt-4">
+        <Button type="submit" disabled={isLoading}>
+          {submitLabel || (
+            <>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create Product
+            </>
+          )}
+        </Button>
+      </div>
+    </form>
   )
 }

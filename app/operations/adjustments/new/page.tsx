@@ -80,27 +80,27 @@ export default function NewAdjustmentPage() {
       notes: formData.get("notes") + ` | System: ${currentStock}, Counted: ${newQuantity}, Difference: ${difference > 0 ? '+' : ''}${difference}`,
     }
 
-    const { error } = await supabase.from("stock_moves").insert(move)
+    try {
+      const response = await fetch("/api/stock-moves", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(move)
+      })
 
-    if (error) {
-      setLoading(false)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to process adjustment")
+      }
+
+      toast.success(`Adjustment processed: ${difference > 0 ? '+' : ''}${difference} units`)
+      router.push("/moves")
+      router.refresh()
+    } catch (error: any) {
       toast.error(error.message || "Failed to process adjustment")
-      console.error(error)
-      return
+    } finally {
+      setLoading(false)
     }
-
-    // Update inventory to actual counted quantity
-    await supabase.from("inventory_levels").upsert({
-      product_id: selectedProduct,
-      warehouse_id: selectedWarehouse,
-      quantity: newQuantity,
-      last_updated: new Date().toISOString()
-    })
-
-    setLoading(false)
-    toast.success(`Adjustment processed: ${difference > 0 ? '+' : ''}${difference} units`)
-    router.push("/moves")
-    router.refresh()
   }
 
   const difference = countedQty && currentStock !== null ? parseInt(countedQty) - currentStock : null

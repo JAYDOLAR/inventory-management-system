@@ -85,9 +85,8 @@ export default function BatchReceiptPage() {
     }
 
     try {
-      // Process each line
+      // Process each line using the API
       for (const line of validLines) {
-        // Create stock move
         const move = {
           product_id: line.product_id,
           to_warehouse_id: warehouseId,
@@ -97,46 +96,24 @@ export default function BatchReceiptPage() {
           notes: notes || null,
         }
 
-        const { error: moveError } = await supabase.from("stock_moves").insert(move)
-
-        if (moveError) {
-          console.error("Move error:", moveError)
-          toast.error(`Failed to process receipt for product`)
-          setLoading(false)
-          return
-        }
-
-        // Update inventory
-        const { data: currentLevel } = await supabase
-          .from("inventory_levels")
-          .select("quantity")
-          .eq("product_id", line.product_id)
-          .eq("warehouse_id", warehouseId)
-          .maybeSingle()
-
-        const newQty = (currentLevel?.quantity || 0) + line.quantity
-
-        const { error: invError } = await supabase.from("inventory_levels").upsert({
-          product_id: line.product_id,
-          warehouse_id: warehouseId,
-          quantity: newQty,
-          last_updated: new Date().toISOString(),
+        const response = await fetch("/api/stock-moves", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(move)
         })
 
-        if (invError) {
-          console.error("Inventory error:", invError)
-          toast.error("Failed to update inventory")
-          setLoading(false)
-          return
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to process receipt")
         }
       }
 
       toast.success(`Batch receipt processed: ${validLines.length} products received`)
       router.push("/moves")
       router.refresh()
-    } catch (error) {
-      console.error("Batch receipt error:", error)
-      toast.error("Failed to process batch receipt")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to process batch receipt")
     } finally {
       setLoading(false)
     }

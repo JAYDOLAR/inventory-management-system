@@ -28,17 +28,26 @@ export default function NewWarehousePage() {
       type: formData.get("type") as string,
     }
 
-    const { error } = await supabase.from("warehouses").insert(warehouse)
+    try {
+      const response = await fetch("/api/warehouses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(warehouse)
+      })
 
-    setLoading(false)
+      const data = await response.json()
 
-    if (error) {
-      toast.error("Failed to create warehouse")
-      console.error(error)
-    } else {
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create warehouse")
+      }
+
       toast.success("Warehouse created successfully")
       router.push("/warehouses")
       router.refresh()
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create warehouse")
+    } finally {
+      setLoading(false)
     }
   }
 

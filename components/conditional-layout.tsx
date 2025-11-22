@@ -1,0 +1,38 @@
+"use client"
+
+import { usePathname } from "next/navigation"
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
+import LowStockNotifier from "@/components/notifications/low-stock-notifier"
+
+export function ConditionalLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  
+  // Check if we're on an auth page
+  const isAuthPage = pathname?.startsWith('/auth')
+  
+  // If auth page, render without sidebar
+  if (isAuthPage) {
+    return <>{children}</>
+  }
+  
+  // Otherwise render with dashboard layout
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background z-10">
+          <SidebarTrigger className="-ml-1" />
+          <div className="h-4 w-px bg-border" />
+          <div className="flex-1" />
+        </header>
+        <main className="flex flex-1 flex-col">
+          <div className="flex-1 space-y-4 p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
+            {children}
+          </div>
+        </main>
+      </SidebarInset>
+      <LowStockNotifier />
+    </SidebarProvider>
+  )
+}
