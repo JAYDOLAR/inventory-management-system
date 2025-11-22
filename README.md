@@ -1,4 +1,4 @@
-# Nexus IMS - Inventory Management System
+# Nexus IMS
 
 A modern, full-stack Inventory Management System built with Next.js 16, Supabase, and shadcn/ui.
 

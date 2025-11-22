@@ -19,7 +19,7 @@ import { usePathname } from "next/navigation"
 const items = [
   {
     title: "Dashboard",
-    url: "/",
+    url: "/dashboard",
     icon: Home,
   },
   {
@@ -58,7 +58,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/">
+              <Link href="/dashboard">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Truck className="h-4 w-4" />
                 </div>

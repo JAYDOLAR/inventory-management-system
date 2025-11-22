@@ -8,11 +8,12 @@ import LowStockNotifier from "@/components/notifications/low-stock-notifier"
 export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   
-  // Check if we're on an auth page
+  // Check if we're on an auth page or the landing page
   const isAuthPage = pathname?.startsWith('/auth')
+  const isLandingPage = pathname === '/'
   
-  // If auth page, render without sidebar
-  if (isAuthPage) {
+  // If auth page or landing page, render without sidebar
+  if (isAuthPage || isLandingPage) {
     return <>{children}</>
   }
   

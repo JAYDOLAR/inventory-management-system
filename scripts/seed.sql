@@ -1,4 +1,4 @@
--- Seed Script for Inventory Management System
+-- Seed Script for Nexus IMS
 -- This script populates the database with sample data
 
 -- Clear existing data (in reverse order of dependencies)

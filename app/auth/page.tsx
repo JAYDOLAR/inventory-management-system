@@ -66,7 +66,7 @@ export default function AuthPage() {
       toast.error(error.message)
     } else {
       toast.success("Signed in successfully!")
-      router.push("/")
+      router.push("/dashboard")
       router.refresh()
     }
   }
@@ -152,7 +152,7 @@ export default function AuthPage() {
           </div>
           <CardTitle className="text-2xl text-center">Nexus IMS</CardTitle>
           <CardDescription className="text-center">
-            Professional Inventory Management System
+            Nexus IMS - Professional Inventory Management System
           </CardDescription>
         </CardHeader>
         <CardContent>

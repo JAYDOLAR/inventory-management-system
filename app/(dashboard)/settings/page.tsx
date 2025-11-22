@@ -18,7 +18,7 @@ export default async function SettingsPage() {
     "use server"
     const supabase = await createClient()
     await supabase.auth.signOut()
-    redirect("/auth")
+    redirect("/")
   }
 
   return (

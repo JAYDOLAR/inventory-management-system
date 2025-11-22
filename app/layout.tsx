@@ -16,7 +16,7 @@ const _sourceSerif_4 = V0_Font_Source_Serif_4({ subsets: ['latin'], weight: ["20
 
 export const metadata: Metadata = {
   title: "Nexus IMS | Inventory Management",
-  description: "Professional Inventory Management System",
+  description: "Nexus IMS - Professional Inventory Management System",
   generator: 'v0.app'
 }
 
