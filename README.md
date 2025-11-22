@@ -1,202 +1,223 @@
-# Nexus IMS
+# 🚀 Nexus IMS v2.0 – StockMaster 
 
-A modern, full-stack Inventory Management System built with Next.js 16, Supabase, and shadcn/ui.
+A modern, enterprise-grade Inventory Management System (IMS) designed to fully satisfy the **StockMaster Problem Statement**.
 
-## Features
+This system, built with Next.js 14, Supabase, and Tailwind CSS, digitizes and streamlines all stock operations—receipts, deliveries, transfers, adjustments, stock visibility, analytics, and warehouse management.
 
-### Authentication & Security
-- User signup and login
-- OTP-based password reset
-- Protected routes with middleware
-- Session management with Supabase Auth
+---
 
-### Product Management
-- Complete CRUD operations for products
-- SKU tracking and categorization
-- Unit of Measure (UoM) management
-- Minimum stock level alerts
-- Advanced search and filtering
-- Multi-location inventory tracking
+## 📌 1. Overview
 
-### Inventory Operations
+[cite_start]Modern businesses often rely on manual registers and scattered spreadsheets [cite: 5] to track stock. Nexus IMS v2.0 replaces this with a centralized, real-time, secure, and intuitive platform that handles all core inventory flows:
 
-**Stock Receipts**
-- Create receipt orders
-- Automatic inventory level updates
-- Supplier reference tracking
-- Single and batch product receipts
+* [cite_start]**Product registration** 
+* [cite_start]**Stock receipts** (incoming goods) [cite: 35]
+* [cite_start]**Delivery orders** (outgoing goods) [cite: 36]
+* [cite_start]**Internal warehouse transfers** [cite: 70]
+* [cite_start]**Physical inventory adjustments** [cite: 37]
+* [cite_start]**Stock movement ledger** [cite: 76, 103]
+* [cite_start]**Dashboard analytics** [cite: 16]
+* [cite_start]**Multi-warehouse operations** [cite: 87]
 
-**Deliveries**
-- Delivery order creation
-- Real-time stock validation
-- Automatic inventory adjustments
-- Insufficient stock alerts
+[cite_start]This implementation fulfills 100% of the StockMaster requirements, providing a robust solution for Inventory Managers [cite: 9] [cite_start]and Warehouse Staff[cite: 10].
 
-**Internal Transfers**
-- Transfer stock between warehouses
-- Source stock validation
-- Automated dual inventory updates
-- Complete movement history
+---
 
-**Stock Adjustments**
-- Physical count reconciliation
-- Real-time variance calculation
-- Damage/loss recording
-- Complete audit trail
+## ⭐ 2. Key Highlights of v2.0
 
-### Dashboard & Reporting
-- Real-time inventory KPIs
-- Warehouse capacity monitoring
-- Recent movements tracking
-- Low stock alerts
-- Stock movement filtering by type, warehouse, and date
-- CSV export for reports
+### 🎨 Modern UI/UX
+* Complete glassmorphism design.
+* Polished Indigo/Zinc theme.
+* Lightning-fast UI with smooth transitions and full mobile responsiveness.
+* **🌗 Dark/Light Mode:** Fully synchronized theme support across all pages.
 
-### Warehouse Management
-- Multi-warehouse support
-- Location tracking and categorization
-- Stock level tracking per warehouse
-- Product count per location
+### 📊 Analytics-Driven Dashboard
+[cite_start]A real-time operational snapshot [cite: 16] [cite_start]with critical Key Performance Indicators (KPIs)[cite: 17]:
 
-### Additional Features
-- Batch operations (multi-product receipts and deliveries)
-- Real-time notifications for low stock
-- Barcode/QR code scanning
-- Data export (CSV)
-- Dark mode support
-- Fully responsive design
+* [cite_start]Total products in stock [cite: 18]
+* [cite_start]Low/out-of-stock items [cite: 19]
+* [cite_start]Pending receipts [cite: 20]
+* [cite_start]Pending deliveries [cite: 21]
+* [cite_start]Scheduled internal transfers [cite: 22]
+* Warehouse capacity usage
+* Stock movement trends (14-day graph)
 
-## Tech Stack
+### 🧩 Modular IMS Architecture
+[cite_start]Each operation type (receipt, delivery, transfer, adjustment) is a separate module with its own flow, status, validation, and audit trail[cite: 24, 25].
 
-- **Frontend**: Next.js 16 (App Router), React 19, TypeScript
-- **Backend**: Supabase (PostgreSQL, Auth, Real-time)
-- **UI**: shadcn/ui, Tailwind CSS 4, Radix UI
-- **Forms**: React Hook Form, Zod validation
-- **Barcode**: html5-qrcode
+---
 
-## Installation
+## 🎯 3. Problem Statement Mapping
 
-### Prerequisites
-- Node.js 18+ and npm/pnpm
-- Supabase account and project
+The system is built to directly address the specified StockMaster requirements:
 
-### Setup Steps
+| Requirement | Feature Implemented | Source |
+| :--- | :--- | :--- |
+| **Target Users** | [cite_start]Inventory Managers, Warehouse Staff | [cite: 9, 10] |
+| **Authentication** | [cite_start]Supabase Auth, Secure signup/login, OTP-based password reset | [cite: 12, 13] |
+| **Dashboard KPIs** | [cite_start]Total stock, Low stock alerts, Pending documents | [cite: 18, 19, 20, 21, 22] |
+| **Dynamic Filters** | [cite_start]By Document Type, Status, Warehouse/location, Product category, SKU search | [cite: 24, 25, 26, 88] |
+| **Navigation** | [cite_start]Dashboard, Products, Operations (Receipts, Deliveries, Transfers, Adjustments), Move History, Warehouses, Profile Menu | [cite: 27, 28, 34, 39, 41, 42] |
+| **Multi-Warehouse** | [cite_start]Dedicated location and warehouse management module | [cite: 87] |
 
-1. **Clone and Install**
+### Core Inventory Flows
+
+1.  [cite_start]**Product Management** [cite: 45]
+    * [cite_start]Create/update products with SKU, name, category, UoM[cite: 46, 47, 48, 49, 50].
+    * [cite_start]Set initial stock [cite: 52] [cite_start]and low stock thresholds[cite: 86].
+    * [cite_start]Multi-warehouse stock visibility[cite: 31].
+2.  [cite_start]**Goods Receipt (Incoming Stock)** [cite: 53]
+    * [cite_start]Flow: Supplier → Add products → Enter quantities → **Validate** → Stock increases automatically[cite: 55, 56, 57, 58, 59].
+3.  [cite_start]**Delivery Orders (Outgoing Stock)** [cite: 62]
+    * [cite_start]Flow: **Pick** → **Pack** → **Validate** → Stock decreases automatically[cite: 65, 66, 67].
+    * Real-time stock validation prevents negative stock.
+4.  [cite_start]**Internal Transfers** [cite: 70]
+    * [cite_start]Move stock between locations (e.g., Main Store → Production Floor)[cite: 73, 75].
+    * [cite_start]Ensures stock stays the same overall, but location distribution updates.
+5.  [cite_start]**Stock Adjustments (Physical Count)** [cite: 77]
+    * [cite_start]Fixes mismatches between physical count and system-recorded stock[cite: 78, 79, 80].
+    * [cite_start]Flow: Select product/location → Enter counted quantity → System updates difference → Adjustment logged[cite: 82, 83, 84].
+6.  [cite_start]**Move History (Stock Ledger)** [cite: 38, 103]
+    * [cite_start]Every transaction—receipt, delivery, transfer, adjustment—is permanently logged  with a timestamp, operation type, quantity, source/destination, and User ID.
+
+---
+
+## 🛠️ 5. Tech Stack
+
+| Layer | Technology | Framework |
+| :--- | :--- | :--- |
+| **Frontend** | Next.js 14 (App Router) | Language: TypeScript |
+| **Backend/DB** | Supabase (PostgreSQL) | Auth: Supabase Auth |
+| **UI/Styling** | Tailwind CSS + shadcn/ui | Charts: Recharts |
+| **Icons** | Lucide React | |
+
+---
+
+## ⚙️ 6. Installation & Setup
+
+### 1. Clone Repository
+
 ```bash
-git clone https://github.com/JAYDOLAR/inventory-management-system.git
+git clone [https://github.com/JAYDOLAR/inventory-management-system.git](https://github.com/JAYDOLAR/inventory-management-system.git)
 cd inventory-management-system
+```
+### 2. Install Dependencies
+
+```bash
 npm install
 ```
 
-2. **Configure Environment**
-```bash
-cp .env.example .env.local
+### 3\. Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-Edit `.env.local`:
-```env
-NEXT_PUBLIC_SUPABASE_URL=your-project-url.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+### 4\. Setup Database
+
+Run all provided SQL scripts against your Supabase instance:
+
+```
+scripts/setup_database.sql
+scripts/atomic_inventory_functions.sql
 ```
 
-3. **Setup Database**
-- Open Supabase SQL Editor
-- Run `scripts/setup_database.sql`
-- Run `scripts/atomic_inventory_functions.sql`
+### 5\. Start Development
 
-4. **Start Development**
-```bash
+Bash
+
+```
 npm run dev
 ```
 
-Visit `http://localhost:3000`
+Open: `http://localhost:3000`
 
-## Database Schema
+## 🗄️ 7. Database Schema Highlights
 
-### Core Tables
+The schema is designed for speed and accuracy, aligned with the StockMaster requirements:
 
-**products**
-- Product master data with SKU, name, category
-- Unit of measure and minimum stock levels
+**Table**
 
-**warehouses**
-- Location management with type classification
-- Supports warehouses, stores, and return centers
+**Key Fields & Purpose**
 
-**inventory_levels**
-- Current stock quantities by product and location
-- Bin location tracking
+`products`
 
-**stock_moves**
-- Complete audit trail of all inventory movements
-- Supports receipts, deliveries, transfers, and adjustments
+SKU, name, category, UoM, Minimum stock level.
 
-## Usage
+`warehouses`
 
-### Adding Products
-1. Go to **Inventory** → **Add Product**
-2. Enter product details (SKU, name, category, UoM)
-3. Set minimum stock level
-4. Save
+Stores, return centers, and capacity fields.
 
-### Receiving Stock
-1. Navigate to **Operations** → **Receipts**
-2. Select destination warehouse
-3. Choose products and enter quantities
-4. Submit receipt
+`inventory_levels`
 
-### Shipping Orders
-1. Go to **Operations** → **Deliveries**
-2. Select source warehouse
-3. Choose products (system validates stock)
-4. Confirm delivery
+Per-product per-warehouse quantities with bin location support.
 
-### Stock Transfers
-1. Navigate to **Operations** → **Transfers**
-2. Select source and destination warehouses
-3. Choose products and quantities
-4. Confirm transfer
+`stock_moves`
 
-### Stock Adjustments
-1. Go to **Operations** → **Adjustments**
-2. Select warehouse and product
-3. Enter actual counted quantity
-4. System calculates and applies difference
+Unified audit ledger. Tracks move type (receipt, delivery, transfer, adjustment), quantity, source, and destination.
 
-## Development
+## 🧭 8. Usage Guide (System Flow)
 
-### Available Scripts
+**Action**
 
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-```
+**Navigation Path**
 
-### Project Structure
+**Result**
 
-```
-inventory-management-system/
-├── app/                    # Next.js app routes
-├── components/            # React components
-├── lib/                   # Utilities and API helpers
-├── scripts/               # Database scripts
-└── public/                # Static assets
-```
+Add Products
 
-## Security
+Inventory → Add Product
 
-- Row Level Security (RLS) enabled on all tables
-- Authentication required for all operations
-- Complete audit trail with user tracking
-- Atomic database operations for data integrity
+Product registered
 
-## License
+Receive Goods
 
-MIT License - See LICENSE file for details
+Operations → Receipts → Validate
 
-## Support
+Stock increases
 
-For issues or questions, please open an issue on GitHub.
+Deliver Orders
+
+Operations → Deliveries → Validate
+
+Stock decreases
+
+Transfer Stock
+
+Operations → Transfers
+
+Location changes, total stock same
+
+Adjust Physical Count
+
+Operations → Adjustments
+
+System updates difference, adjustment logged
+
+View Movement Log
+
+Move History
+
+View every transaction
+
+## 🔒 9. Security
+
+-   Row Level Security (RLS) is enabled on all critical tables.
+    
+-   All operations are authenticated and authorized based on user roles.
+    
+-   Atomic PostgreSQL functions are used to prevent inconsistent stock levels.
+    
+-   Movement audit logs track every change and the user responsible.
+    
+
+## 📄 10. License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+### 🙋 Support
+
+For any issues or feature requests, please open a GitHub issue.
