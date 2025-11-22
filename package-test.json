@@ -1,0 +1,8 @@
+{
+  "name": "inventory-management-system",
+  "type": "module",
+  "scripts": {
+    "test:backend": "node scripts/test-backend.js",
+    "test:backend:cleanup": "node scripts/test-backend.js --cleanup"
+  }
+}
