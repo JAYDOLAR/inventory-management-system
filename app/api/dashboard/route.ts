@@ -8,13 +8,19 @@ export async function GET() {
     const [
       { data: products },
       { data: inventoryLevels },
-      { data: stockMoves },
-      { data: warehouses }
+      { data: recentMoves },
+      { data: warehouses },
+      { count: draftReceiptsCount },
+      { count: draftDeliveriesCount },
+      { count: draftTransfersCount }
     ] = await Promise.all([
       supabase.from("products").select("*"),
       supabase.from("inventory_levels").select("*"),
-      supabase.from("stock_moves").select("*").order("created_at", { ascending: false }).limit(100),
-      supabase.from("warehouses").select("*")
+      supabase.from("stock_moves").select("*").order("created_at", { ascending: false }).limit(10),
+      supabase.from("warehouses").select("*"),
+      supabase.from("stock_moves").select("*", { count: 'exact', head: true }).eq('status', 'draft').eq('type', 'receipt'),
+      supabase.from("stock_moves").select("*", { count: 'exact', head: true }).eq('status', 'draft').eq('type', 'delivery'),
+      supabase.from("stock_moves").select("*", { count: 'exact', head: true }).eq('status', 'draft').eq('type', 'transfer')
     ])
 
     // Calculate KPIs
@@ -39,28 +45,23 @@ export async function GET() {
       return totalStock === 0
     }).length || 0
 
-    // Pending receipts (recent receipts)
-    const pendingReceipts = stockMoves?.filter(
-      (move: any) => move.type === "receipt"
-    ).slice(0, 5).length || 0
+    // Pending receipts (drafts)
+    const pendingReceipts = draftReceiptsCount || 0
 
-    // Pending deliveries (recent deliveries)
-    const pendingDeliveries = stockMoves?.filter(
-      (move: any) => move.type === "delivery"
-    ).slice(0, 5).length || 0
+    // Pending deliveries (drafts)
+    const pendingDeliveries = draftDeliveriesCount || 0
 
-    // Internal transfers scheduled
-    const internalTransfers = stockMoves?.filter(
-      (move: any) => move.type === "transfer"
-    ).slice(0, 5).length || 0
+    // Internal transfers scheduled (drafts)
+    const internalTransfers = draftTransfersCount || 0
 
     // Recent movements for chart
-    const recentMovements = stockMoves?.slice(0, 10).map((move: any) => ({
+    const recentMovements = recentMoves?.map((move: any) => ({
       id: move.id,
       type: move.type,
       quantity: move.quantity,
       created_at: move.created_at,
-      reference: move.reference
+      reference: move.reference,
+      status: move.status
     })) || []
 
     // Warehouse capacity (mock calculation)

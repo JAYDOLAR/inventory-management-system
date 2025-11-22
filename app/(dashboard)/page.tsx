@@ -41,24 +41,22 @@ export default async function Dashboard() {
     .order('created_at', { ascending: false })
     .limit(10)
 
-  // Count pending receipts (receipts from today)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // Count pending receipts (drafts)
   const { count: pendingReceipts } = await supabase
     .from('stock_moves')
     .select('*', { count: 'exact', head: true })
     .eq('type', 'receipt')
-    .gte('created_at', today.toISOString())
+    .eq('status', 'draft')
 
-  // Get active moves (movements from last 24 hours)
-  const yesterday = new Date()
-  yesterday.setHours(yesterday.getHours() - 24)
-  const { count: activeMoves } = await supabase
+  // Count pending deliveries (drafts)
+  const { count: pendingDeliveries } = await supabase
     .from('stock_moves')
     .select('*', { count: 'exact', head: true })
-    .gte('created_at', yesterday.toISOString())
+    .eq('type', 'delivery')
+    .eq('status', 'draft')
 
   // Calculate trend (compare with last month - simplified)
+  const today = new Date()
   const lastMonth = new Date()
   lastMonth.setMonth(lastMonth.getMonth() - 1)
   const { count: lastMonthMoves } = await supabase
@@ -116,18 +114,18 @@ export default async function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pendingReceipts || 0}</div>
-            <p className="text-xs text-muted-foreground">Received today</p>
+            <p className="text-xs text-muted-foreground">Draft receipts</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Moves</CardTitle>
+            <CardTitle className="text-sm font-medium">Pending Deliveries</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeMoves || 0}</div>
-            <p className="text-xs text-muted-foreground">Last 24 hours</p>
+            <div className="text-2xl font-bold">{pendingDeliveries || 0}</div>
+            <p className="text-xs text-muted-foreground">Draft deliveries</p>
           </CardContent>
         </Card>
       </div>
@@ -152,6 +150,11 @@ export default async function Dashboard() {
                           ${move.type === 'adjustment' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : ''}
                         `}>
                           {move.type.charAt(0).toUpperCase() + move.type.slice(1)}
+                        </span>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border
+                          ${move.status === 'done' ? 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' : 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800'}
+                        `}>
+                          {move.status === 'done' ? 'Done' : 'Draft'}
                         </span>
                         <span className="text-sm font-medium">{move.reference || 'N/A'}</span>
                       </div>

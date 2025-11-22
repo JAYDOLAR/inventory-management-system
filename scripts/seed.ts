@@ -25,6 +25,13 @@ const warehouses = [
   { name: 'Miami Warehouse', location: 'Miami, FL', type: 'warehouse' },
 ]
 
+const suppliers = [
+  { name: 'Acme Corp', contact_person: 'John Smith', email: 'john@acme.com', phone: '555-0101', address: '123 Tech Blvd, NY' },
+  { name: 'Global Steel', contact_person: 'Sarah Jones', email: 'sarah@globalsteel.com', phone: '555-0102', address: '456 Metal Way, PA' },
+  { name: 'Tech Parts Ltd', contact_person: 'Mike Brown', email: 'mike@techparts.com', phone: '555-0103', address: '789 Circuit Rd, CA' },
+  { name: 'Office Supplies Co', contact_person: 'Lisa White', email: 'lisa@officesupplies.com', phone: '555-0104', address: '321 Paper St, IL' },
+]
+
 const products = [
   { sku: 'LAPTOP-001', name: 'Dell Latitude 5420', description: 'Business laptop with i5 processor', category: 'Electronics', uom: 'unit', min_stock_level: 10 },
   { sku: 'LAPTOP-002', name: 'HP ProBook 450', description: '15.6" business laptop', category: 'Electronics', uom: 'unit', min_stock_level: 8 },
@@ -56,6 +63,7 @@ async function clearDatabase() {
   await supabase.from('inventory_levels').delete().neq('id', '00000000-0000-0000-0000-000000000000')
   await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000')
   await supabase.from('warehouses').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  await supabase.from('suppliers').delete().neq('id', '00000000-0000-0000-0000-000000000000')
   
   console.log('✅ Database cleared')
 }
@@ -74,6 +82,23 @@ async function seedWarehouses() {
   }
   
   console.log(`✅ Created ${data.length} warehouses`)
+  return data
+}
+
+async function seedSuppliers() {
+  console.log('🏭 Seeding suppliers...')
+  
+  const { data, error } = await supabase
+    .from('suppliers')
+    .insert(suppliers)
+    .select()
+  
+  if (error) {
+    console.error('Error seeding suppliers:', error)
+    throw error
+  }
+  
+  console.log(`✅ Created ${data.length} suppliers`)
   return data
 }
 
@@ -134,7 +159,7 @@ async function seedInventoryLevels(warehouseData: any[], productData: any[]) {
   return data
 }
 
-async function seedStockMoves(warehouseData: any[], productData: any[], inventoryData: any[]) {
+async function seedStockMoves(warehouseData: any[], productData: any[], inventoryData: any[], supplierData: any[]) {
   console.log('📝 Seeding stock movements...')
   
   const stockMoves = []
@@ -147,14 +172,18 @@ async function seedStockMoves(warehouseData: any[], productData: any[], inventor
   inventoryData.forEach((inv, index) => {
     if (inv.quantity > 0) {
       const daysAgo = Math.floor(Math.random() * 30) + 5
+      const supplier = supplierData[Math.floor(Math.random() * supplierData.length)]
+      
       stockMoves.push({
         product_id: inv.product_id,
         to_warehouse_id: inv.warehouse_id,
         from_warehouse_id: null,
+        supplier_id: supplier.id,
         quantity: inv.quantity,
         type: 'receipt',
         reference: `PO-INIT-${String(index + 1).padStart(4, '0')}`,
         notes: 'Initial stock receipt',
+        status: 'done', // Mark as done
         created_at: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString()
       })
     }
@@ -175,6 +204,7 @@ async function seedStockMoves(warehouseData: any[], productData: any[], inventor
       type: 'adjustment',
       reference: `ADJ-${String(i + 1).padStart(4, '0')}`,
       notes: 'Cycle count adjustment',
+      status: 'done', // Mark as done
       created_at: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString()
     })
   }
@@ -209,18 +239,22 @@ async function main() {
     const warehouseData = await seedWarehouses()
     console.log('')
     
+    const supplierData = await seedSuppliers()
+    console.log('')
+    
     const productData = await seedProducts()
     console.log('')
     
     const inventoryData = await seedInventoryLevels(warehouseData, productData)
     console.log('')
     
-    const movesData = await seedStockMoves(warehouseData, productData, inventoryData)
+    const movesData = await seedStockMoves(warehouseData, productData, inventoryData, supplierData)
     console.log('')
     
     console.log('🎉 Database seeding completed successfully!\n')
     console.log('📊 Summary:')
     console.log(`   - ${warehouseData.length} warehouses`)
+    console.log(`   - ${supplierData.length} suppliers`)
     console.log(`   - ${productData.length} products`)
     console.log(`   - ${inventoryData.length} inventory levels`)
     console.log(`   - ${movesData.length} stock movements`)

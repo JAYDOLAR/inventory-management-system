@@ -63,91 +63,99 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
-    const body = await request.json()
+    const json = await request.json()
+    const moves = Array.isArray(json) ? json : [json]
     
-    // Validate required fields
-    if (!body.product_id || !body.type || !body.quantity || body.quantity <= 0) {
+    if (moves.length === 0) {
       return NextResponse.json(
-        { error: "Product, type, and valid quantity are required" },
+        { error: "No stock moves provided" },
         { status: 400 }
       )
     }
-    
-    // Validate type-specific requirements
-    if (body.type === "receipt" && !body.to_warehouse_id) {
-      return NextResponse.json(
-        { error: "Destination warehouse is required for receipts" },
-        { status: 400 }
-      )
-    }
-    
-    if (body.type === "delivery" && !body.from_warehouse_id) {
-      return NextResponse.json(
-        { error: "Source warehouse is required for deliveries" },
-        { status: 400 }
-      )
-    }
-    
-    if (body.type === "transfer" && (!body.from_warehouse_id || !body.to_warehouse_id)) {
-      return NextResponse.json(
-        { error: "Source and destination warehouses are required for transfers" },
-        { status: 400 }
-      )
-    }
-    
-    if (body.type === "transfer" && body.from_warehouse_id === body.to_warehouse_id) {
-      return NextResponse.json(
-        { error: "Source and destination warehouses must be different" },
-        { status: 400 }
-      )
-    }
-    
-    if (body.type === "adjustment" && !body.to_warehouse_id) {
-      return NextResponse.json(
-        { error: "Warehouse is required for adjustments" },
-        { status: 400 }
-      )
-    }
-    
-    // Check stock availability for deliveries and transfers
-    if (body.type === "delivery" || body.type === "transfer") {
-      const { data: currentStock } = await supabase
-        .from("inventory_levels")
-        .select("quantity")
-        .eq("product_id", body.product_id)
-        .eq("warehouse_id", body.from_warehouse_id)
-        .maybeSingle()
-      
-      const available = currentStock?.quantity || 0
-      if (available < body.quantity) {
+
+    // Validate all moves
+    for (const body of moves) {
+      // Validate required fields
+      if (!body.product_id || !body.type || !body.quantity || body.quantity <= 0) {
         return NextResponse.json(
-          { error: `Insufficient stock. Available: ${available}, Requested: ${body.quantity}` },
-          { status: 409 }
+          { error: "Product, type, and valid quantity are required for all items" },
+          { status: 400 }
         )
+      }
+      
+      // Validate type-specific requirements
+      if (body.type === "receipt" && !body.to_warehouse_id) {
+        return NextResponse.json(
+          { error: "Destination warehouse is required for receipts" },
+          { status: 400 }
+        )
+      }
+      
+      if (body.type === "delivery" && !body.from_warehouse_id) {
+        return NextResponse.json(
+          { error: "Source warehouse is required for deliveries" },
+          { status: 400 }
+        )
+      }
+      
+      if (body.type === "transfer" && (!body.from_warehouse_id || !body.to_warehouse_id)) {
+        return NextResponse.json(
+          { error: "Source and destination warehouses are required for transfers" },
+          { status: 400 }
+        )
+      }
+      
+      if (body.type === "transfer" && body.from_warehouse_id === body.to_warehouse_id) {
+        return NextResponse.json(
+          { error: "Source and destination warehouses must be different" },
+          { status: 400 }
+        )
+      }
+      
+      if (body.type === "adjustment" && !body.to_warehouse_id) {
+        return NextResponse.json(
+          { error: "Warehouse is required for adjustments" },
+          { status: 400 }
+        )
+      }
+      
+      // Check stock availability for deliveries and transfers
+      // Note: This check is per-item and doesn't account for multiple moves of the same product in the batch reducing stock below zero combined.
+      // Check stock availability for deliveries and transfers (only if validating)
+      if ((body.type === "delivery" || body.type === "transfer") && body.status === 'done') {
+        const { data: currentStock } = await supabase
+          .from("inventory_levels")
+          .select("quantity")
+          .eq("product_id", body.product_id)
+          .eq("warehouse_id", body.from_warehouse_id)
+          .maybeSingle()
+        
+        const available = currentStock?.quantity || 0
+        if (available < body.quantity) {
+          return NextResponse.json(
+            { error: `Insufficient stock for product ${body.product_id}. Available: ${available}, Requested: ${body.quantity}` },
+            { status: 409 }
+          )
+        }
+      }
+
+      // Set default status if not provided
+      if (!body.status) {
+        body.status = 'done' // Default to 'done' for backward compatibility
       }
     }
     
-    // Insert the stock move
+    // Insert the stock moves
     const { data: moveData, error: moveError } = await supabase
       .from("stock_moves")
-      .insert({
-        product_id: body.product_id,
-        from_warehouse_id: body.from_warehouse_id || null,
-        to_warehouse_id: body.to_warehouse_id || null,
-        quantity: body.quantity,
-        type: body.type,
-        reference: body.reference || null,
-        notes: body.notes || null
-      })
+      .insert(moves)
       .select()
-      .single()
     
     if (moveError) throw moveError
     
-    // Update inventory levels based on type
-    await updateInventoryLevels(supabase, body)
+    // Manual inventory update removed - handled by database trigger
     
-    return NextResponse.json(moveData, { status: 201 })
+    return NextResponse.json(Array.isArray(json) ? moveData : moveData[0], { status: 201 })
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to create stock move" },
@@ -156,72 +164,5 @@ export async function POST(request: Request) {
   }
 }
 
-async function updateInventoryLevels(supabase: any, move: any) {
-  switch (move.type) {
-    case "receipt":
-      await adjustInventory(supabase, move.product_id, move.to_warehouse_id, move.quantity, "increase")
-      break
-      
-    case "delivery":
-      await adjustInventory(supabase, move.product_id, move.from_warehouse_id, move.quantity, "decrease")
-      break
-      
-    case "transfer":
-      await adjustInventory(supabase, move.product_id, move.from_warehouse_id, move.quantity, "decrease")
-      await adjustInventory(supabase, move.product_id, move.to_warehouse_id, move.quantity, "increase")
-      break
-      
-    case "adjustment":
-      await setInventory(supabase, move.product_id, move.to_warehouse_id, move.quantity)
-      break
-  }
-}
+// Helper functions removed as they are now handled by database triggers
 
-async function adjustInventory(
-  supabase: any,
-  productId: string,
-  warehouseId: string,
-  quantity: number,
-  operation: "increase" | "decrease"
-) {
-  const { data: current } = await supabase
-    .from("inventory_levels")
-    .select("quantity")
-    .eq("product_id", productId)
-    .eq("warehouse_id", warehouseId)
-    .maybeSingle()
-  
-  const currentQty = current?.quantity || 0
-  const newQty = operation === "increase" 
-    ? currentQty + quantity 
-    : Math.max(0, currentQty - quantity)
-  
-  await supabase
-    .from("inventory_levels")
-    .upsert({
-      product_id: productId,
-      warehouse_id: warehouseId,
-      quantity: newQty,
-      last_updated: new Date().toISOString()
-    }, {
-      onConflict: "product_id,warehouse_id"
-    })
-}
-
-async function setInventory(
-  supabase: any,
-  productId: string,
-  warehouseId: string,
-  quantity: number
-) {
-  await supabase
-    .from("inventory_levels")
-    .upsert({
-      product_id: productId,
-      warehouse_id: warehouseId,
-      quantity: quantity,
-      last_updated: new Date().toISOString()
-    }, {
-      onConflict: "product_id,warehouse_id"
-    })
-}
